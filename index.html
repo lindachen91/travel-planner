@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -129,7 +130,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 /* ── Modals ── */
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;display:none;align-items:center;justify-content:center}
 .modal-backdrop.open{display:flex}
-.modal{background:var(--white);border-radius:14px;padding:28px;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.modal{background:var(--white);border-radius:14px;padding:28px;width:480px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .modal-title{font-size:18px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
 .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray-500);padding:0;line-height:1}
 .modal-close:hover{color:var(--black)}
@@ -138,12 +139,8 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 .modal-input{width:100%;padding:10px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;color:var(--black);outline:none;transition:border-color .15s}
 .modal-input:focus{border-color:var(--black)}
 .date-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.date-picker{position:absolute;top:100%;left:0;width:100%;max-width:100%;min-width:0;margin-top:10px;background:var(--white);border:1px solid var(--gray-200);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,0.12);padding:16px;z-index:50}
+.date-picker{position:absolute;top:100%;left:0;width:100%;min-width:0;margin-top:8px;background:var(--white);border:1px solid var(--gray-200);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,0.12);padding:16px;z-index:9999}
 .date-picker.hidden{display:none}
-/* Date picker backdrop for mobile */
-.date-picker-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;align-items:center;justify-content:center;padding:16px}
-.date-picker-overlay.open{display:flex}
-.date-picker-overlay .date-picker{position:static;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;margin:0;box-shadow:0 20px 60px rgba(0,0,0,0.25)}
 .date-picker-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
 .date-picker-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .date-picker-nav{display:flex;align-items:center;gap:10px}
@@ -175,15 +172,14 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
   nav{padding:0 16px}
   .page{padding:20px 16px}
   .trips-grid{grid-template-columns:1fr}
-  .modal{padding:20px}
+  .modal{padding:16px}
   .form-row-2{grid-template-columns:1fr}
   .day-header{padding:14px 16px 12px}
   .day-body{padding:0 16px 16px}
   .detail-title{font-size:22px}
   .date-picker-calendars{grid-template-columns:1fr}
-  /* On mobile, show picker as full overlay */
-  .modal-field .date-picker{display:none!important}
-  .date-picker-overlay.open{display:flex!important}
+  .date-picker{position:static!important;margin-top:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+  .modal-field{position:static!important;overflow:visible}
 }
 
 /* ── Supabase Config Banner ── */
@@ -215,6 +211,16 @@ body.view-mode [data-del]{display:none!important}
 body.view-mode .view-mode-badge{display:flex}
 .view-mode-badge{display:none;background:#e0f2fe;color:#0369a1;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;align-items:center;gap:5px}
 
+
+/* ── Config Banner ── */
+.config-banner{background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 16px;margin:12px auto;max-width:1100px;font-size:13px;display:flex;align-items:center;gap:8px}
+/* ── Sync indicator ── */
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;transition:background .3s}
+.sync-dot.ok{background:#22c55e}
+.sync-dot.err{background:#ef4444}
+.sync-dot.loading{background:#f59e0b;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-status{font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:5px}
 </style>
 </head>
 <body>
@@ -225,11 +231,12 @@ body.view-mode .view-mode-badge{display:flex}
     <div class="nav-logo-icon">✈</div>
     旅遊行程規劃
   </div>
-  <div style="display:flex;align-items:center;gap:12px">
-    <span class="sync-status"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">連線中…</span></span>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="sync-status"><span class="sync-dot" id="sync-dot"></span><span id="sync-label"></span></span>
     <button class="nav-btn" onclick="openTripModal()">＋ 新增行程</button>
   </div>
 </nav>
+<div class="config-banner" id="config-banner" style="display:none">⚠️ 尚未設定 Supabase，目前為本機模式</div>
 
 <!-- Supabase Config Banner (hidden after setup) -->
 <div class="config-banner" id="config-banner" style="display:none">
@@ -254,6 +261,13 @@ body.view-mode .view-mode-badge{display:flex}
     <div class="detail-back" onclick="goHome()">← 返回</div>
     <div class="detail-title" id="detail-name"></div>
     <div class="detail-dest"><span>📍</span><span id="detail-dest"></span></div>
+    <div id="trip-share-bar" class="share-bar hidden">
+      <span class="share-label">🔗 分享連結</span>
+      <input class="share-url" id="share-url-input" readonly>
+      <button class="share-copy-btn" onclick="copyShareUrl()">複製連結</button>
+      <span class="view-mode-badge" id="view-mode-badge">👁 瀏覽模式</span>
+      <span class="sync-status"><span class="sync-dot" id="sync-dot"></span><span id="sync-label">未連線</span></span>
+    </div>
     <div id="days-container"></div>
   </div>
 </div>
@@ -288,11 +302,6 @@ body.view-mode .view-mode-badge{display:flex}
   </div>
 </div>
 
-<!-- Date Picker Overlay (mobile) -->
-<div class="date-picker-overlay" id="date-picker-overlay" onclick="closeDatePicker()">
-  <div id="date-picker-overlay-inner" onclick="event.stopPropagation()"></div>
-</div>
-
 <script>
 // ══════════════════════════════════════════════
 //  ⚙️  SUPABASE 設定（請填入你的專案資訊）
@@ -302,8 +311,6 @@ var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 // ══════════════════════════════════════════════
 
 var _supabase = null;
-var _realtimeChannel = null;
-
 function getSupabase(){
   if(_supabase) return _supabase;
   if(SUPABASE_URL==='YOUR_SUPABASE_URL'){ return null; }
@@ -311,72 +318,59 @@ function getSupabase(){
   return _supabase;
 }
 
-function setSyncStatus(s){
-  var dot = document.getElementById('sync-dot');
-  var lbl = document.getElementById('sync-label');
-  if(!dot) return;
-  dot.className = 'sync-dot' + (s==='ok'?' ok': s==='err'?' err': s==='loading'?' loading':'');
-  var map = {ok:'已同步', err:'同步失敗', loading:'同步中…', off:'本機模式', connecting:'連線中…'};
-  lbl.textContent = map[s]||'';
-}
+// ── State ──
+// ══════════════════════════════════
+//  ⚙️ Supabase 設定
+// ══════════════════════════════════
+var SUPABASE_URL      = 'https://hklhswlcrfdjuquqxknt.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrbGhzd2xjcmZkanVxdXF4a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzE0NzQsImV4cCI6MjA5NTcwNzQ3NH0.P6qjN7IUlWXFwJkjmsbQk5MOj8J9qVKJuar5FRZdmCM';
 
-// Push ALL trips to Supabase as a single shared record (key = 'shared')
+var _sb = null;
+function getSB(){
+  if(_sb) return _sb;
+  if(!SUPABASE_URL||SUPABASE_URL==='YOUR_SUPABASE_URL') return null;
+  _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return _sb;
+}
+function setSyncStatus(s){
+  var dot=document.getElementById('sync-dot'), lbl=document.getElementById('sync-label');
+  if(!dot) return;
+  dot.className='sync-dot'+(s==='ok'?' ok':s==='err'?' err':s==='loading'?' loading':'');
+  lbl.textContent={ok:'已同步',err:'同步失敗',loading:'同步中…',off:'本機模式',connecting:'連線中…'}[s]||'';
+}
 async function pushAll(){
-  var sb = getSupabase(); if(!sb){ setSyncStatus('off'); return; }
+  var sb=getSB(); if(!sb){setSyncStatus('off');return;}
   setSyncStatus('loading');
   try{
-    var res = await sb.from('shared_state').upsert({
-      id: 'main',
-      data: JSON.stringify(trips),
-      updated_at: new Date().toISOString()
-    }, {onConflict:'id'});
-    if(res.error) throw res.error;
+    var r=await sb.from('shared_state').upsert({id:'main',data:JSON.stringify(trips),updated_at:new Date().toISOString()},{onConflict:'id'});
+    if(r.error) throw r.error;
     setSyncStatus('ok');
-  } catch(e){ console.error('push error', e); setSyncStatus('err'); }
+  }catch(e){console.error('push',e);setSyncStatus('err');}
 }
-
-// Pull all trips from Supabase
 async function pullAll(){
-  var sb = getSupabase(); if(!sb){ setSyncStatus('off'); return; }
+  var sb=getSB(); if(!sb){setSyncStatus('off');return;}
   try{
-    var res = await sb.from('shared_state').select('data').eq('id','main').maybeSingle();
-    if(res.error) throw res.error;
-    if(res.data && res.data.data){
-      trips = JSON.parse(res.data.data);
-      try{ localStorage.setItem('tp_trips', JSON.stringify(trips)); }catch(e){}
-    }
+    var r=await sb.from('shared_state').select('data').eq('id','main').maybeSingle();
+    if(r.error) throw r.error;
+    if(r.data&&r.data.data){ trips=JSON.parse(r.data.data); try{localStorage.setItem('tp_trips',JSON.stringify(trips));}catch(e){} }
     setSyncStatus('ok');
-  } catch(e){ console.error('pull error', e); setSyncStatus('err'); }
+  }catch(e){console.error('pull',e);setSyncStatus('err');}
 }
-
-// Subscribe to realtime updates
+var _rch=null;
 function subscribeAll(){
-  var sb = getSupabase(); if(!sb) return;
-  if(_realtimeChannel){ sb.removeChannel(_realtimeChannel); }
-  _realtimeChannel = sb.channel('shared-main')
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'shared_state',filter:'id=eq.main'},
-      function(payload){
-        if(!payload.new || !payload.new.data) return;
-        var remote = JSON.parse(payload.new.data);
-        trips = remote;
-        try{ localStorage.setItem('tp_trips', JSON.stringify(trips)); }catch(e){}
-        setSyncStatus('ok');
-        // Re-render current view
-        if(currentTripId){
-          var t = trips.find(function(x){ return x.id===currentTripId; });
-          if(t){ document.getElementById('detail-name').textContent=t.name; document.getElementById('detail-dest').textContent=t.dest||''; renderDays(t); }
-          else { goHome(); }
-        } else {
-          renderHome();
-        }
-      })
-    .subscribe(function(status){
-      if(status==='SUBSCRIBED') setSyncStatus('ok');
-      else if(status==='CLOSED'||status==='CHANNEL_ERROR') setSyncStatus('err');
-    });
+  var sb=getSB(); if(!sb) return;
+  if(_rch){ sb.removeChannel(_rch); }
+  _rch=sb.channel('shared-main')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'shared_state',filter:'id=eq.main'},function(payload){
+      if(!payload.new||!payload.new.data) return;
+      trips=JSON.parse(payload.new.data);
+      try{localStorage.setItem('tp_trips',JSON.stringify(trips));}catch(e){}
+      setSyncStatus('ok');
+      if(currentTripId){ var t=trips.find(function(x){return x.id===currentTripId;}); if(t){document.getElementById('detail-name').textContent=t.name;document.getElementById('detail-dest').textContent=t.dest||'';renderDays(t);}else{goHome();} } else { renderHome(); }
+    })
+    .subscribe(function(s){ if(s==='SUBSCRIBED') setSyncStatus('ok'); else if(s==='CLOSED'||s==='CHANNEL_ERROR') setSyncStatus('err'); });
 }
 
-// ── State ──
 var trips = [];
 try { trips = JSON.parse(localStorage.getItem('tp_trips') || '[]'); } catch(e){ trips=[]; }
 var currentTripId = null;
@@ -386,115 +380,9 @@ var datePickerState = { start:'', end:'', currentMonth:null };
 // ── Sync state ──
 var isSyncing = false;
 
-function save(){
-  try{ localStorage.setItem('tp_trips', JSON.stringify(trips)); }catch(e){}
-  pushAll();
-}
+function save(){ try{ localStorage.setItem('tp_trips', JSON.stringify(trips)); }catch(e){} pushAll(); }
 
-// ── Generate share id ──
-function genShareId(){
-  return Math.random().toString(36).slice(2,8) + Math.random().toString(36).slice(2,8);
-}
-
-// ── Push trip to Supabase ──
-async function pushTripToCloud(tripId){
-  var sb = getSupabase(); if(!sb) return;
-  var trip = trips.find(function(t){ return t.id===tripId; });
-  if(!trip) return;
-  if(!trip.share_id){ trip.share_id = genShareId(); localStorage.setItem('tp_trips', JSON.stringify(trips)); }
-  setSyncStatus('loading');
-  try{
-    var res = await sb.from('trips').upsert({
-      share_id: trip.share_id,
-      data: JSON.stringify(trip),
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'share_id' });
-    if(res.error) throw res.error;
-    setSyncStatus('ok');
-    updateShareBar(trip.share_id);
-  } catch(e){ console.error('Supabase push error', e); setSyncStatus('err'); }
-}
-
-// ── Pull trip from Supabase ──
-async function pullTripFromCloud(shareId){
-  var sb = getSupabase(); if(!sb) return null;
-  try{
-    var res = await sb.from('trips').select('data').eq('share_id', shareId).single();
-    if(res.error) throw res.error;
-    return JSON.parse(res.data.data);
-  } catch(e){ console.error('Supabase pull error', e); return null; }
-}
-
-// ── Subscribe to realtime changes ──
-function subscribeRealtime(shareId){
-  var sb = getSupabase(); if(!sb) return;
-  if(realtimeChannel){ sb.removeChannel(realtimeChannel); realtimeChannel = null; }
-  realtimeChannel = sb.channel('trip-'+shareId)
-    .on('postgres_changes',{event:'UPDATE', schema:'public', table:'trips', filter:'share_id=eq.'+shareId},
-      function(payload){
-        if(isSyncing) return;
-        var remote = JSON.parse(payload.new.data);
-        // Update local trips array
-        var idx = trips.findIndex(function(t){ return t.share_id===shareId; });
-        if(idx>=0){ trips[idx]=remote; } else { trips.unshift(remote); }
-        try{ localStorage.setItem('tp_trips', JSON.stringify(trips)); }catch(e){}
-        setSyncStatus('ok');
-        // Re-render if this trip is currently open
-        if(currentTripId === remote.id){
-          document.getElementById('detail-name').textContent = remote.name;
-          document.getElementById('detail-dest').textContent = remote.dest||'';
-          renderDays(remote);
-        } else {
-          renderHome();
-        }
-      })
-    .subscribe();
-}
-
-// ── Share bar ──
-function updateShareBar(shareId){
-  var bar = document.getElementById('trip-share-bar');
-  var input = document.getElementById('share-url-input');
-  if(!bar||!input) return;
-  bar.classList.remove('hidden');
-  var url = location.origin + location.pathname + '?trip=' + shareId;
-  input.value = url;
-  currentShareId = shareId;
-}
-
-function copyShareUrl(){
-  var input = document.getElementById('share-url-input');
-  if(!input) return;
-  navigator.clipboard.writeText(input.value).then(function(){
-    var btn = document.querySelector('.share-copy-btn');
-    var orig = btn.textContent; btn.textContent = '✅ 已複製！';
-    setTimeout(function(){ btn.textContent = orig; }, 2000);
-  });
-}
-
-// ── Load from URL share param ──
-async function checkShareParam(){
-  var params = new URLSearchParams(location.search);
-  var shareId = params.get('trip');
-  if(!shareId) return false;
-  var sb = getSupabase();
-  if(!sb){ alert('請先設定 Supabase 連線資訊才能開啟分享連結'); return false; }
-  var trip = await pullTripFromCloud(shareId);
-  if(!trip){ alert('找不到此行程，連結可能已失效'); return false; }
-  // Merge into local
-  var idx = trips.findIndex(function(t){ return t.share_id===shareId; });
-  if(idx>=0){ trips[idx]=trip; } else { trips.unshift(trip); }
-  localStorage.setItem('tp_trips', JSON.stringify(trips));
-  // Check if owner (has this trip locally already before visiting link)
-  // Simple heuristic: if trip was already in local trips before merge → editor, else viewer
-  isViewMode = (idx < 0); // new to this browser → view mode
-  if(isViewMode){ document.body.classList.add('view-mode'); }
-  currentShareId = shareId;
-  subscribeRealtime(shareId);
-  setSyncStatus('ok');
-  openTrip(trip.id);
-  return true;
-}
+// (old per-trip cloud functions removed)
 
 // ── Escape ──
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
@@ -583,23 +471,8 @@ function syncDatePickerState(){
   }
 }
 function toggleDatePicker(e){ e.stopPropagation(); var picker = document.getElementById('trip-date-picker'); if(picker.classList.contains('hidden')){ openDatePicker(); } else { closeDatePicker(); } }
-function openDatePicker(){
-  syncDatePickerState();
-  renderDatePicker();
-  if(window.innerWidth <= 600){
-    // mobile: use overlay
-    var inner = document.getElementById('date-picker-overlay-inner');
-    var picker = document.getElementById('trip-date-picker');
-    if(inner && picker){ inner.innerHTML = picker.innerHTML; }
-    document.getElementById('date-picker-overlay').classList.add('open');
-  } else {
-    document.getElementById('trip-date-picker').classList.remove('hidden');
-  }
-}
-function closeDatePicker(){
-  document.getElementById('trip-date-picker').classList.add('hidden');
-  document.getElementById('date-picker-overlay').classList.remove('open');
-}
+function openDatePicker(){ syncDatePickerState(); renderDatePicker(); document.getElementById('trip-date-picker').classList.remove('hidden'); }
+function closeDatePicker(){ document.getElementById('trip-date-picker').classList.add('hidden'); }
 function renderDatePicker(){
   var picker = document.getElementById('trip-date-picker');
   syncDatePickerState();
@@ -651,12 +524,6 @@ function renderDatePicker(){
   html += '<button type="button" class="picker-okay-btn" onclick="closeDatePicker()">完成</button>';
   html += '</div>';
   picker.innerHTML = html;
-  // Also sync overlay if open
-  var overlay = document.getElementById('date-picker-overlay');
-  if(overlay && overlay.classList.contains('open')){
-    var inner = document.getElementById('date-picker-overlay-inner');
-    if(inner) inner.innerHTML = html;
-  }
 }
 function changePickerMonth(offset){
   var m = datePickerState.currentMonth;
@@ -1249,13 +1116,8 @@ document.addEventListener('click', function(){
 
 // ── Init ──
 async function init(){
-  var sb = getSupabase();
-  if(!sb){
-    setSyncStatus('off');
-    document.getElementById('config-banner').style.display='flex';
-    renderHome();
-    return;
-  }
+  var sb=getSB();
+  if(!sb){setSyncStatus('off');document.getElementById('config-banner').style.display='flex';renderHome();return;}
   setSyncStatus('connecting');
   await pullAll();
   renderHome();
