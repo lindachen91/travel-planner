@@ -140,6 +140,10 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 .date-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .date-picker{position:absolute;top:100%;left:0;width:100%;max-width:100%;min-width:0;margin-top:10px;background:var(--white);border:1px solid var(--gray-200);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,0.12);padding:16px;z-index:50}
 .date-picker.hidden{display:none}
+/* Date picker backdrop for mobile */
+.date-picker-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:400;align-items:center;justify-content:center;padding:16px}
+.date-picker-overlay.open{display:flex}
+.date-picker-overlay .date-picker{position:static;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;margin:0;box-shadow:0 20px 60px rgba(0,0,0,0.25)}
 .date-picker-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
 .date-picker-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .date-picker-nav{display:flex;align-items:center;gap:10px}
@@ -177,6 +181,9 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
   .day-body{padding:0 16px 16px}
   .detail-title{font-size:22px}
   .date-picker-calendars{grid-template-columns:1fr}
+  /* On mobile, show picker as full overlay */
+  .modal-field .date-picker{display:none!important}
+  .date-picker-overlay.open{display:flex!important}
 }
 
 /* ── Supabase Config Banner ── */
@@ -279,6 +286,11 @@ body.view-mode .view-mode-badge{display:flex}
       <button class="modal-secondary" onclick="closeTripModal()">取消</button>
     </div>
   </div>
+</div>
+
+<!-- Date Picker Overlay (mobile) -->
+<div class="date-picker-overlay" id="date-picker-overlay" onclick="closeDatePicker()">
+  <div id="date-picker-overlay-inner" onclick="event.stopPropagation()"></div>
 </div>
 
 <script>
@@ -571,8 +583,23 @@ function syncDatePickerState(){
   }
 }
 function toggleDatePicker(e){ e.stopPropagation(); var picker = document.getElementById('trip-date-picker'); if(picker.classList.contains('hidden')){ openDatePicker(); } else { closeDatePicker(); } }
-function openDatePicker(){ syncDatePickerState(); renderDatePicker(); document.getElementById('trip-date-picker').classList.remove('hidden'); }
-function closeDatePicker(){ document.getElementById('trip-date-picker').classList.add('hidden'); }
+function openDatePicker(){
+  syncDatePickerState();
+  renderDatePicker();
+  if(window.innerWidth <= 600){
+    // mobile: use overlay
+    var inner = document.getElementById('date-picker-overlay-inner');
+    var picker = document.getElementById('trip-date-picker');
+    if(inner && picker){ inner.innerHTML = picker.innerHTML; }
+    document.getElementById('date-picker-overlay').classList.add('open');
+  } else {
+    document.getElementById('trip-date-picker').classList.remove('hidden');
+  }
+}
+function closeDatePicker(){
+  document.getElementById('trip-date-picker').classList.add('hidden');
+  document.getElementById('date-picker-overlay').classList.remove('open');
+}
 function renderDatePicker(){
   var picker = document.getElementById('trip-date-picker');
   syncDatePickerState();
@@ -624,6 +651,12 @@ function renderDatePicker(){
   html += '<button type="button" class="picker-okay-btn" onclick="closeDatePicker()">完成</button>';
   html += '</div>';
   picker.innerHTML = html;
+  // Also sync overlay if open
+  var overlay = document.getElementById('date-picker-overlay');
+  if(overlay && overlay.classList.contains('open')){
+    var inner = document.getElementById('date-picker-overlay-inner');
+    if(inner) inner.innerHTML = html;
+  }
 }
 function changePickerMonth(offset){
   var m = datePickerState.currentMonth;
