@@ -222,6 +222,16 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20
   .dp-overlay{align-items:center}
   .dp-inner{border-radius:16px;margin:20px}
 }
+
+/* ── Day Highlight ── */
+.day-highlight{font-size:13px;color:var(--gray-500);margin-top:2px;display:flex;align-items:center;gap:5px}
+.day-highlight-text{font-weight:500;color:var(--gray-700)}
+.highlight-edit-btn{background:none;border:none;cursor:pointer;font-size:12px;opacity:0.5;padding:2px 4px;border-radius:4px}
+.highlight-edit-btn:hover{opacity:1;background:var(--gray-100)}
+.highlight-input-wrap{display:flex;align-items:center;gap:6px;margin-top:4px}
+.highlight-input{padding:5px 10px;border:1.5px solid var(--gray-200);border-radius:8px;font-size:13px;font-family:inherit;width:180px;outline:none}
+.highlight-input:focus{border-color:var(--black)}
+.highlight-save-btn{background:var(--black);color:white;border:none;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:inherit}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -289,7 +299,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20
     <div class="modal-field" style="position:relative;">
       <label class="modal-label">日期區間</label>
       <input class="modal-input" id="trip-date-range" placeholder="請選擇日期區間" readonly onclick="toggleDatePicker(event)">
-      <div class="date-picker hidden" id="trip-date-picker" onclick="event.stopPropagation()"></div>
+      <div class="date-picker hidden" id="trip-date-picker"></div>
     </div>
     <input type="hidden" id="trip-start">
     <input type="hidden" id="trip-end">
@@ -421,11 +431,10 @@ function openDatePicker(){
   syncDatePickerState();
   renderDatePicker();
   var picker = document.getElementById('trip-date-picker');
+  if(picker) picker.classList.remove('hidden');
+  // Also populate overlay for mobile
   var inner = document.getElementById('dp-inner');
-  if(picker && inner){
-    inner.innerHTML = picker.innerHTML;
-    bindDpInnerEvents();
-  }
+  if(picker && inner) inner.innerHTML = picker.innerHTML;
   document.getElementById('dp-overlay').classList.add('open');
   document.body.style.overflow='hidden';
 }
@@ -474,7 +483,7 @@ function renderDatePicker(){
       if(selStart && isSameDate(dt,selStart)) classes.push('selected');
       if(selEnd && isSameDate(dt,selEnd)) classes.push('selected');
       if(selStart && selEnd && isBetween(dt,selStart,selEnd)) classes.push('in-range');
-      html += '<button type="button" class="'+classes.join(' ')+'" onclick="selectPickerDate(\''+dateStr+'\')">'+day+'</button>';
+      html += '<button type="button" class="'+classes.join(' ')+'" onclick="selectPickerDate(\''+dateStr+'\')">' + day + '</button>';
     }
     html += '</div></div>';
   });
@@ -491,10 +500,13 @@ function renderDatePicker(){
     if(inner) inner.innerHTML = html;
   }
 }
+var _pickerNavClick = false;
 function changePickerMonth(offset){
+  _pickerNavClick = true;
   var m = datePickerState.currentMonth;
   datePickerState.currentMonth = new Date(m.getFullYear(), m.getMonth()+offset, 1);
   renderDatePicker();
+  setTimeout(function(){ _pickerNavClick = false; }, 100);
 }
 function selectPickerDate(dateStr){
   if(!datePickerState.start || (datePickerState.start && datePickerState.end)){
@@ -653,9 +665,21 @@ function renderDays(trip){
       // Header
       var hdr = document.createElement('div');
       hdr.className = 'day-header';
+      var highlight = (trip.highlights && trip.highlights[dayIdx]) ? trip.highlights[dayIdx] : '';
       hdr.innerHTML =
-        '<div><div class="day-title">第 '+(dayIdx+1)+' 天</div>'+
-        (dateLabel?'<div class="day-date">'+esc(dateLabel)+'</div>':'')+
+        '<div>' +
+          '<div class="day-title">第 '+(dayIdx+1)+' 天</div>' +
+          (dateLabel?'<div class="day-date">'+esc(dateLabel)+'</div>':'') +
+          '<div class="day-highlight" id="hl-display-'+dayIdx+'">' +
+            '<span>⭐</span>' +
+            '<span class="day-highlight-text" id="hl-text-'+dayIdx+'">'+(highlight?esc(highlight):'本日重點')+'</span>' +
+            '<button class="highlight-edit-btn" onclick="editHighlight('+dayIdx+')">✏️</button>' +
+          '</div>' +
+          '<div class="highlight-input-wrap hidden" id="hl-input-wrap-'+dayIdx+'">' +
+            '<input class="highlight-input" id="hl-input-'+dayIdx+'" value="'+esc(highlight)+'" placeholder="本日重點">' +
+            '<button class="highlight-save-btn" onclick="saveHighlight('+dayIdx+')">儲存</button>' +
+            '<button class="highlight-save-btn" style="background:var(--gray-200);color:var(--black)" onclick="cancelHighlight('+dayIdx+')">取消</button>' +
+          '</div>' +
         '</div>';
       var addBtn = document.createElement('button');
       addBtn.className = 'add-activity-btn';
@@ -903,6 +927,30 @@ function buildActItem(act, dayIdx, trip){
   return wrapper;
 }
 
+
+function editHighlight(dayIdx){
+  document.getElementById('hl-display-'+dayIdx).classList.add('hidden');
+  document.getElementById('hl-input-wrap-'+dayIdx).classList.remove('hidden');
+  var inp = document.getElementById('hl-input-'+dayIdx);
+  if(inp){ inp.focus(); }
+}
+function cancelHighlight(dayIdx){
+  document.getElementById('hl-display-'+dayIdx).classList.remove('hidden');
+  document.getElementById('hl-input-wrap-'+dayIdx).classList.add('hidden');
+}
+function saveHighlight(dayIdx){
+  var val = (document.getElementById('hl-input-'+dayIdx)||{}).value||'';
+  var trip = trips.find(function(t){ return t.id===currentTripId; });
+  if(!trip) return;
+  if(!trip.highlights) trip.highlights = {};
+  trip.highlights[dayIdx] = val.trim();
+  save();
+  // Update display
+  var txt = document.getElementById('hl-text-'+dayIdx);
+  if(txt) txt.textContent = val.trim() || '新增本日重點';
+  cancelHighlight(dayIdx);
+}
+
 // ── Add Form ──
 function toggleAddForm(dayIdx, trip){
   var form = document.getElementById('add-form-'+dayIdx);
@@ -1078,8 +1126,19 @@ function swapDays(a,b){
 document.getElementById('trip-modal').addEventListener('click', function(e){
   if(e.target===this) closeTripModal();
 });
-document.addEventListener('click', function(){
-  closeDatePicker();
+document.addEventListener('click', function(e){
+  var pickerDiv = document.getElementById('trip-date-picker');
+  var overlay = document.getElementById('dp-overlay');
+  var triggerInput = document.getElementById('trip-date-range');
+  if(!pickerDiv) return;
+  var pickerOpen = !pickerDiv.classList.contains('hidden');
+  var overlayOpen = overlay && overlay.classList.contains('open');
+  if(!pickerOpen && !overlayOpen) return;
+  // Check by closest ancestor (works even after innerHTML replacement)
+  var t = e.target;
+  var inPicker = t.closest && (t.closest('#trip-date-picker') || t.closest('#dp-inner') || t.closest('#dp-overlay'));
+  var inTrigger = t.closest && t.closest('#trip-date-range');
+  if(!inPicker && !inTrigger && !_pickerNavClick) closeDatePicker();
 });
 
 // ── Supabase Sync ──
@@ -1194,21 +1253,8 @@ function onDpOverlayClick(e){
   if(e.target===document.getElementById('dp-overlay')) closeDatePicker();
 }
 function bindDpInnerEvents(){
-  var inner = document.getElementById('dp-inner');
-  if(!inner) return;
-  // Prev/Next month buttons
-  var prev = inner.querySelector('.dp-prev');
-  var next = inner.querySelector('.dp-next');
-  // prev/next handled by inline onclick="changePickerMonth()" - no override needed
-  // Day cells
-  inner.querySelectorAll('.dp-day[data-date]').forEach(function(el){
-    el.onclick = function(){ selectDpDate(this.dataset.date); };
-  });
-  // Clear/Done buttons
-  var clearBtn = inner.querySelector('.dp-clear');
-  var doneBtn = inner.querySelector('.dp-done');
-  if(clearBtn) clearBtn.onclick = clearDateRange;
-  if(doneBtn) doneBtn.onclick = closeDatePicker;
+  // Inline onclick handlers work directly (changePickerMonth, selectPickerDate, etc.)
+  // Nothing extra needed
 }
 
 // ── Init ──
