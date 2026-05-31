@@ -835,7 +835,7 @@ function buildActItem(act, dayIdx, trip){
         (act.category?'<div class="act-category"><span class="act-category-icon">'+esc(categoryIcon(act.category))+'</span> '+esc(act.category)+'</div>':'')+
         '<div class="activity-name">'+esc(act.name)+'</div>'+
         placeHtml+
-        (act.note?'<div class="activity-note">'+esc(act.note)+'</div>':'')+
+        (act.note?'<div class="activity-note">'+renderNote(act.note)+'</div>':'')+
       '</div>'+
       '<div class="activity-actions">'+
         '<button class="icon-btn" title="上移" data-move-up="'+act.id+'">⬆️</button>'+
@@ -948,6 +948,21 @@ function saveHighlight(dayIdx){
   var txt = document.getElementById('hl-text-'+dayIdx);
   if(txt) txt.textContent = val.trim() || '新增本日重點';
   cancelHighlight(dayIdx);
+}
+
+
+function renderNote(text) {
+  if (!text) return '';
+  // Escape HTML first
+  var s = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // [text](url) → <a href="url">text</a>
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+    '<a href="$2" target="_blank" style="color:var(--sky);text-decoration:underline">$1</a>');
+  // plain https?:// URLs → <a>
+  s = s.replace(/(^|[^"'>])(https?:\/\/[^\s<]+)/g,
+    '$1<a href="$2" target="_blank" style="color:var(--sky);text-decoration:underline">$2</a>');
+  return s;
 }
 
 // ── Add Form ──
