@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>旅遊行程規劃</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -13,18 +13,18 @@
   --gray-200:#e8e8e8;--gray-300:#d0d0d0;--gray-500:#888;--gray-700:#444;
   --accent:#1a1a1a;--red:#e74c3c;--radius:10px;--shadow:0 2px 12px rgba(0,0,0,0.08);
 }
-body{font-family:'Noto Sans TC',sans-serif;background:var(--gray-50);color:var(--black);min-height:100vh;font-size:14px}
+html{overflow-x:hidden}body{font-family:'Noto Sans TC',sans-serif;background:var(--gray-50);color:var(--black);min-height:100vh;font-size:14px;overflow-x:hidden;width:100%;max-width:100vw}
 
 /* ── Nav ── */
-nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;width:100%;box-sizing:border-box}
 .nav-logo{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700}
 .nav-logo-icon{width:36px;height:36px;background:var(--black);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--white);font-size:18px}
 .nav-btn{background:var(--black);color:var(--white);border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:opacity .15s}
 .nav-btn:hover{opacity:.8}
 
 /* ── Page ── */
-.page{display:none;padding:40px}.page.active{display:block}
-.page-centered{max-width:760px;margin:0 auto}
+.page{display:none;padding:20px;width:100%;box-sizing:border-box}.page.active{display:block}
+.page-centered{max-width:760px;margin:0 auto;width:100%;box-sizing:border-box}
 
 /* ── Empty State ── */
 .empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:12px;text-align:center}
@@ -35,7 +35,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 .empty-btn:hover{opacity:.8}
 
 /* ── Trip Cards Grid ── */
-.trips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;max-width:1100px;margin:0 auto}
+.trips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:16px;width:100%}
 .trip-card{background:var(--white);border:1px solid var(--gray-200);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);transition:box-shadow .15s}
 .trip-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.12)}
 .trip-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
@@ -57,7 +57,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 
 /* ── Day Section ── */
 .day-section{border:1px solid var(--gray-200);border-radius:var(--radius);background:var(--white);margin-bottom:16px;overflow:hidden;box-shadow:var(--shadow)}
-.day-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px 14px}
+.day-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;flex-wrap:wrap;gap:8px}
 .day-title{font-size:16px;font-weight:700}
 .day-date{font-size:13px;color:var(--gray-500);margin-top:2px}
 .add-activity-btn{background:var(--black);color:var(--white);border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-family:inherit;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:opacity .15s}
@@ -113,7 +113,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 .day-section.dragging{opacity:0.98;transform:scale(.998);transition:transform .12s,opacity .12s}
 .day-section.drag-over{box-shadow:0 10px 30px rgba(0,0,0,0.12);border-color:var(--accent)}
 .activity-time{font-size:12px;font-weight:600;color:var(--black);font-variant-numeric:tabular-nums;min-width:80px;padding-top:2px}
-.activity-info{flex:1;min-width:0}
+.activity-info{flex:1;min-width:0;overflow:hidden}
 .activity-name{font-weight:600;font-size:14px;margin-bottom:2px}
 .activity-place{font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:4px}
 .activity-place a{color:var(--gray-500);text-decoration:none}
@@ -139,14 +139,14 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 .date-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 
 
-.date-picker-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
-.date-picker-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.date-picker-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;width:100%;box-sizing:border-box}
+.date-picker-title{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 .date-picker-nav{display:flex;align-items:center;gap:10px}
 .picker-nav-btn{background:var(--gray-100);border:none;border-radius:8px;color:var(--gray-700);width:32px;height:32px;cursor:pointer;font-size:16px}
-.date-picker-calendars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;overflow-x:auto}
+.date-picker-calendars{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .date-picker-panel{display:flex;flex-direction:column;gap:10px;min-width:0}
 .date-picker-panel .date-picker-title{font-size:13px;text-align:center}
-.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;width:100%}
 .calendar-weekday{font-size:12px;color:var(--gray-500);text-align:center;font-weight:700}
 .calendar-day{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:10px;cursor:pointer;color:var(--gray-700);font-size:12px;background:transparent;border:none;min-width:0}
 .calendar-day:hover{background:var(--gray-100)}
@@ -168,6 +168,9 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 /* ── Responsive ── */
 @media(max-width:600px){
   nav{padding:0 16px}
+  .dp-inner *{max-width:100%;box-sizing:border-box}
+  .date-picker-header{width:100%}
+  .date-picker-title{font-size:12px}
   .page{padding:20px 16px}
   .trips-grid{grid-template-columns:1fr}
   .modal{padding:20px}
@@ -175,7 +178,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
   .day-header{padding:14px 16px 12px}
   .day-body{padding:0 16px 16px}
   .detail-title{font-size:22px}
-  .date-picker-calendars{grid-template-columns:1fr}
+  .date-picker-calendars{grid-template-columns:1fr!important}
 }
 
 /* ── Supabase Config Banner ── */
@@ -212,9 +215,9 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 /* ── Date Picker Overlay ── */
 .date-picker{display:none}
 .date-picker.hidden{display:none}
-.dp-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center}
+.dp-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center;overflow:hidden}
 .dp-overlay.open{display:flex}
-.dp-inner{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px 40px}
+.dp-inner{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px calc(80px + env(safe-area-inset-bottom, 20px));box-sizing:border-box;overflow-x:hidden}
 @media(min-width:520px){
   .dp-overlay{align-items:center}
   .dp-inner{border-radius:16px;margin:20px}
