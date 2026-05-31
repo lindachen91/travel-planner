@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -305,21 +304,14 @@ body.view-mode .view-mode-badge{display:flex}
 // ══════════════════════════════════════════════
 //  ⚙️  SUPABASE 設定（請填入你的專案資訊）
 // ══════════════════════════════════════════════
-var SUPABASE_URL  = 'https://hklhswlcrfdjuquqxknt.supabase.co';   // e.g. https://xxxx.supabase.co
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrbGhzd2xjcmZkanVxdXF4a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzE0NzQsImV4cCI6MjA5NTcwNzQ3NH0.P6qjN7IUlWXFwJkjmsbQk5MOj8J9qVKJuar5FRZdmCM'; // Project Settings > API
+var SUPABASE_URL      = 'https://hklhswlcrfdjuquqxknt.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrbGhzd2xjcmZkanVxdXF4a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzE0NzQsImV4cCI6MjA5NTcwNzQ3NH0.P6qjN7IUlWXFwJkjmsbQk5MOj8J9qVKJuar5FRZdmCM';
 // ══════════════════════════════════════════════
-
-  _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  return _supabase;
-}
 
 // ── State ──
 // ══════════════════════════════════
 //  ⚙️ Supabase 設定
 // ══════════════════════════════════
-var SUPABASE_URL      = 'https://hklhswlcrfdjuquqxknt.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrbGhzd2xjcmZkanVxdXF4a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzE0NzQsImV4cCI6MjA5NTcwNzQ3NH0.P6qjN7IUlWXFwJkjmsbQk5MOj8J9qVKJuar5FRZdmCM';
-
 var _sb = null;
 function getSB(){
   if(_sb) return _sb;
