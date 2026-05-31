@@ -6,6 +6,7 @@
 <title>旅遊行程規劃</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -288,22 +289,60 @@ body.view-mode .view-mode-badge{display:flex}
 // ══════════════════════════════════════════════
 //  ⚙️  SUPABASE 設定（請填入你的專案資訊）
 // ══════════════════════════════════════════════
-var SUPABASE_URL  = 'https://hklhswlcrfdjuquqxknt.supabase.co';   // e.g. https://xxxx.supabase.co
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrbGhzd2xjcmZkanVxdXF4a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzE0NzQsImV4cCI6MjA5NTcwNzQ3NH0.P6qjN7IUlWXFwJkjmsbQk5MOj8J9qVKJuar5FRZdmCM'; // Project Settings > API
-// ══════════════════════════════════════════════
+var SUPABASE_URL      = 'https://hklhswlcrfdjuquqxknt.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrbGhzd2xjcmZkanVxdXF4a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzE0NzQsImV4cCI6MjA5NTcwNzQ3NH0.P6qjN7IUlWXFwJkjmsbQk5MOj8J9qVKJuar5FRZdmCM';
 
-var _supabase = null;
-function getSupabase(){
-  if(_supabase) return _supabase;
-  if(SUPABASE_URL==='YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY==='YOUR_SUPABASE_ANON_KEY'){
-    return null;
-  }
-  if(typeof window.supabase === 'undefined'){
-    console.warn('Supabase library 未載入，改為本機模式');
-    return null;
-  }
-  _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  return _supabase;
+var _sb = null;
+function getSB(){
+  if(_sb) return _sb;
+  if(!SUPABASE_URL||SUPABASE_URL==='YOUR_SUPABASE_URL') return null;
+  _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return _sb;
+}
+function setSyncStatus(s){
+  var dot=document.getElementById('sync-dot'), lbl=document.getElementById('sync-label');
+  if(!dot) return;
+  dot.className='sync-dot'+(s==='ok'?' ok':s==='err'?' err':s==='loading'?' loading':'');
+  lbl.textContent={ok:'已同步',err:'同步失敗',loading:'同步中…',off:'本機模式',connecting:'連線中…'}[s]||'';
+}
+async function pushAll(){
+  var sb=getSB(); if(!sb){setSyncStatus('off');return;}
+  setSyncStatus('loading');
+  try{
+    var r=await sb.from('shared_state').upsert({id:'main',data:JSON.stringify(trips),updated_at:new Date().toISOString()},{onConflict:'id'});
+    if(r.error) throw r.error;
+    setSyncStatus('ok');
+  }catch(e){console.error('push error',e);setSyncStatus('err');}
+}
+async function pullAll(){
+  var sb=getSB(); if(!sb){setSyncStatus('off');return;}
+  try{
+    var r=await sb.from('shared_state').select('data').eq('id','main').maybeSingle();
+    if(r.error) throw r.error;
+    if(r.data&&r.data.data){ trips=JSON.parse(r.data.data); try{localStorage.setItem('tp_trips',JSON.stringify(trips));}catch(e){} }
+    setSyncStatus('ok');
+  }catch(e){console.error('pull error',e);setSyncStatus('err');}
+}
+var _rch=null;
+function subscribeAll(){
+  var sb=getSB(); if(!sb) return;
+  if(_rch){ sb.removeChannel(_rch); }
+  _rch=sb.channel('shared-main')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'shared_state',filter:'id=eq.main'},function(payload){
+      if(!payload.new||!payload.new.data) return;
+      trips=JSON.parse(payload.new.data);
+      try{localStorage.setItem('tp_trips',JSON.stringify(trips));}catch(e){}
+      setSyncStatus('ok');
+      if(currentTripId){
+        var t=trips.find(function(x){return x.id===currentTripId;});
+        if(t){document.getElementById('detail-name').textContent=t.name;document.getElementById('detail-dest').textContent=t.dest||'';renderDays(t);}
+        else{goHome();}
+      } else { renderHome(); }
+    })
+    .subscribe(function(s){
+      if(s==='SUBSCRIBED') setSyncStatus('ok');
+      else if(s==='CLOSED'||s==='CHANNEL_ERROR') setSyncStatus('err');
+    });
 }
 
 // ── State ──
@@ -314,10 +353,7 @@ var openFormDay = null; // which day has add-form open
 var datePickerState = { start:'', end:'', currentMonth:null };
 
 // ── Sync state ──
-var currentShareId = null;     // share_id of the trip currently open
-var realtimeChannel = null;
-var isSyncing = false;
-var isViewMode = false;
+
 
 function setSyncStatus(status){ // 'ok' | 'err' | 'loading' | 'off'
   var dot = document.getElementById('sync-dot');
@@ -327,115 +363,9 @@ function setSyncStatus(status){ // 'ok' | 'err' | 'loading' | 'off'
   lbl.textContent = {ok:'已同步', err:'同步失敗', loading:'同步中…', off:'本機模式'}[status] || '';
 }
 
-function save(){
-  try{ localStorage.setItem('tp_trips', JSON.stringify(trips)); }catch(e){}
+function save(){ try{ localStorage.setItem('tp_trips', JSON.stringify(trips)); }catch(e){} pushAll(); }catch(e){}
   // if supabase configured and we have a current trip open, push to cloud
   if(currentShareId && !isViewMode){ pushTripToCloud(currentTripId); }
-}
-
-// ── Generate share id ──
-function genShareId(){
-  return Math.random().toString(36).slice(2,8) + Math.random().toString(36).slice(2,8);
-}
-
-// ── Push trip to Supabase ──
-async function pushTripToCloud(tripId){
-  var sb = getSupabase(); if(!sb) return;
-  var trip = trips.find(function(t){ return t.id===tripId; });
-  if(!trip) return;
-  if(!trip.share_id){ trip.share_id = genShareId(); localStorage.setItem('tp_trips', JSON.stringify(trips)); }
-  setSyncStatus('loading');
-  try{
-    var res = await sb.from('trips').upsert({
-      share_id: trip.share_id,
-      data: JSON.stringify(trip),
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'share_id' });
-    if(res.error) throw res.error;
-    setSyncStatus('ok');
-    updateShareBar(trip.share_id);
-  } catch(e){ console.error('Supabase push error', e); setSyncStatus('err'); }
-}
-
-// ── Pull trip from Supabase ──
-async function pullTripFromCloud(shareId){
-  var sb = getSupabase(); if(!sb) return null;
-  try{
-    var res = await sb.from('trips').select('data').eq('share_id', shareId).single();
-    if(res.error) throw res.error;
-    return JSON.parse(res.data.data);
-  } catch(e){ console.error('Supabase pull error', e); return null; }
-}
-
-// ── Subscribe to realtime changes ──
-function subscribeRealtime(shareId){
-  var sb = getSupabase(); if(!sb) return;
-  if(realtimeChannel){ sb.removeChannel(realtimeChannel); realtimeChannel = null; }
-  realtimeChannel = sb.channel('trip-'+shareId)
-    .on('postgres_changes',{event:'UPDATE', schema:'public', table:'trips', filter:'share_id=eq.'+shareId},
-      function(payload){
-        if(isSyncing) return;
-        var remote = JSON.parse(payload.new.data);
-        // Update local trips array
-        var idx = trips.findIndex(function(t){ return t.share_id===shareId; });
-        if(idx>=0){ trips[idx]=remote; } else { trips.unshift(remote); }
-        try{ localStorage.setItem('tp_trips', JSON.stringify(trips)); }catch(e){}
-        setSyncStatus('ok');
-        // Re-render if this trip is currently open
-        if(currentTripId === remote.id){
-          document.getElementById('detail-name').textContent = remote.name;
-          document.getElementById('detail-dest').textContent = remote.dest||'';
-          renderDays(remote);
-        } else {
-          renderHome();
-        }
-      })
-    .subscribe();
-}
-
-// ── Share bar ──
-function updateShareBar(shareId){
-  var bar = document.getElementById('trip-share-bar');
-  var input = document.getElementById('share-url-input');
-  if(!bar||!input) return;
-  bar.classList.remove('hidden');
-  var url = location.origin + location.pathname + '?trip=' + shareId;
-  input.value = url;
-  currentShareId = shareId;
-}
-
-function copyShareUrl(){
-  var input = document.getElementById('share-url-input');
-  if(!input) return;
-  navigator.clipboard.writeText(input.value).then(function(){
-    var btn = document.querySelector('.share-copy-btn');
-    var orig = btn.textContent; btn.textContent = '✅ 已複製！';
-    setTimeout(function(){ btn.textContent = orig; }, 2000);
-  });
-}
-
-// ── Load from URL share param ──
-async function checkShareParam(){
-  var params = new URLSearchParams(location.search);
-  var shareId = params.get('trip');
-  if(!shareId) return false;
-  var sb = getSupabase();
-  if(!sb){ alert('請先設定 Supabase 連線資訊才能開啟分享連結'); return false; }
-  var trip = await pullTripFromCloud(shareId);
-  if(!trip){ alert('找不到此行程，連結可能已失效'); return false; }
-  // Merge into local
-  var idx = trips.findIndex(function(t){ return t.share_id===shareId; });
-  if(idx>=0){ trips[idx]=trip; } else { trips.unshift(trip); }
-  localStorage.setItem('tp_trips', JSON.stringify(trips));
-  // Check if owner (has this trip locally already before visiting link)
-  // Simple heuristic: if trip was already in local trips before merge → editor, else viewer
-  isViewMode = (idx < 0); // new to this browser → view mode
-  if(isViewMode){ document.body.classList.add('view-mode'); }
-  currentShareId = shareId;
-  subscribeRealtime(shareId);
-  setSyncStatus('ok');
-  openTrip(trip.id);
-  return true;
 }
 
 // ── Escape ──
@@ -1185,12 +1115,15 @@ document.addEventListener('click', function(){
 });
 
 // ── Init ──
-if(SUPABASE_URL==='YOUR_SUPABASE_URL'){
-  document.getElementById('config-banner').style.display='flex';
+async function init(){
+  var sb=getSB();
+  if(!sb){ setSyncStatus('off'); document.getElementById('config-banner').style.display='flex'; renderHome(); return; }
+  setSyncStatus('connecting');
+  await pullAll();
+  renderHome();
+  subscribeAll();
 }
-checkShareParam().then(function(handled){
-  if(!handled) renderHome();
-});
+init();
 </script>
 </body>
 </html>
