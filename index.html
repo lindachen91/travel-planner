@@ -137,8 +137,8 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 .modal-input{width:100%;padding:10px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;color:var(--black);outline:none;transition:border-color .15s}
 .modal-input:focus{border-color:var(--black)}
 .date-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.date-picker{position:absolute;top:100%;left:0;width:100%;max-width:100%;min-width:0;margin-top:10px;background:var(--white);border:1px solid var(--gray-200);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,0.12);padding:16px;z-index:50}
-.date-picker.hidden{display:none}
+
+
 .date-picker-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
 .date-picker-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .date-picker-nav{display:flex;align-items:center;gap:10px}
@@ -167,8 +167,6 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 
 /* ── Responsive ── */
 @media(max-width:600px){
-  .date-picker{position:static!important;margin-top:6px;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
-  .modal-field{position:static!important}
   nav{padding:0 16px}
   .page{padding:20px 16px}
   .trips-grid{grid-template-columns:1fr}
@@ -199,6 +197,28 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 /* ── View mode (read-only from share link) ── */
 
 
+
+
+.cal-box 
+.cal-box-btns{display:flex;gap:10px;margin-top:16px}
+.cal-box-btns button{flex:1;padding:12px;border-radius:10px;border:none;font-size:15px;font-family:inherit;font-weight:600;cursor:pointer}
+.cal-confirm{background:#1a1a1a;color:#fff}
+.cal-cancel{background:#f3f3f3;color:#1a1a1a}
+@media(min-width:601px){
+  .cal-overlay{align-items:center}
+  .cal-box{border-radius:20px;max-width:480px;padding:24px}
+}
+
+/* ── Date Picker Overlay ── */
+.date-picker{display:none}
+.date-picker.hidden{display:none}
+.dp-overlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center}
+.dp-overlay.open{display:flex}
+.dp-inner{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:520px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px 40px}
+@media(min-width:520px){
+  .dp-overlay{align-items:center}
+  .dp-inner{border-radius:16px;margin:20px}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -277,6 +297,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
   </div>
 </div>
 
+<div class="dp-overlay" id="dp-overlay" onclick="onDpOverlayClick(event)"><div class="dp-inner" id="dp-inner"></div></div>
 <script>
 // ══════════════════════════════════════════════
 //  ⚙️  SUPABASE 設定（請填入你的專案資訊）
@@ -393,8 +414,23 @@ function syncDatePickerState(){
   }
 }
 function toggleDatePicker(e){ e.stopPropagation(); var picker = document.getElementById('trip-date-picker'); if(picker.classList.contains('hidden')){ openDatePicker(); } else { closeDatePicker(); } }
-function openDatePicker(){ syncDatePickerState(); renderDatePicker(); document.getElementById('trip-date-picker').classList.remove('hidden'); }
-function closeDatePicker(){ document.getElementById('trip-date-picker').classList.add('hidden'); }
+function openDatePicker(){
+  syncDatePickerState();
+  renderDatePicker();
+  var picker = document.getElementById('trip-date-picker');
+  var inner = document.getElementById('dp-inner');
+  if(picker && inner){
+    inner.innerHTML = picker.innerHTML;
+    bindDpInnerEvents();
+  }
+  document.getElementById('dp-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeDatePicker(){
+  document.getElementById('trip-date-picker').classList.add('hidden');
+  document.getElementById('dp-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
 function renderDatePicker(){
   var picker = document.getElementById('trip-date-picker');
   syncDatePickerState();
@@ -446,6 +482,11 @@ function renderDatePicker(){
   html += '<button type="button" class="picker-okay-btn" onclick="closeDatePicker()">完成</button>';
   html += '</div>';
   picker.innerHTML = html;
+  var overlay = document.getElementById('cal-overlay');
+  if(overlay && overlay.classList.contains('open')){
+    var inner = document.getElementById('cal-overlay-inner');
+    if(inner) inner.innerHTML = html;
+  }
 }
 function changePickerMonth(offset){
   var m = datePickerState.currentMonth;
@@ -1130,6 +1171,44 @@ function subscribeAll(){
     });
 }
 
+
+function calConfirm(){
+  // sync picker state from overlay back to hidden picker
+  var overlayInner = document.getElementById('cal-overlay-inner');
+  if(overlayInner){
+    // copy innerHTML back to real picker so state is preserved
+    document.getElementById('trip-date-picker').innerHTML = overlayInner.innerHTML;
+  }
+  closeDatePicker();
+  updateDateRangeInput();
+}
+function calCancel(){
+  closeDatePicker();
+}
+
+
+function onDpOverlayClick(e){
+  if(e.target.id==='dp-overlay') closeDatePicker();
+}
+function bindDpInnerEvents(){
+  var inner = document.getElementById('dp-inner');
+  if(!inner) return;
+  // Prev/Next month buttons
+  var prev = inner.querySelector('.dp-prev');
+  var next = inner.querySelector('.dp-next');
+  if(prev) prev.onclick = function(){ dpViewYear*=1; dpViewMonth*=1; dpViewMonth--; if(dpViewMonth<0){dpViewMonth=11;dpViewYear--;} renderDatePicker(); };
+  if(next) next.onclick = function(){ dpViewYear*=1; dpViewMonth*=1; dpViewMonth++; if(dpViewMonth>11){dpViewMonth=0;dpViewYear++;} renderDatePicker(); };
+  // Day cells
+  inner.querySelectorAll('.dp-day[data-date]').forEach(function(el){
+    el.onclick = function(){ selectDpDate(this.dataset.date); };
+  });
+  // Clear/Done buttons
+  var clearBtn = inner.querySelector('.dp-clear');
+  var doneBtn = inner.querySelector('.dp-done');
+  if(clearBtn) clearBtn.onclick = clearDateRange;
+  if(doneBtn) doneBtn.onclick = closeDatePicker;
+}
+
 // ── Init ──
 async function init(){
   var sb=getSB();
@@ -1141,5 +1220,12 @@ async function init(){
 }
 init();
 </script>
+
+    <div class="cal-box-btns">
+      <button class="cal-confirm" onclick="calConfirm()">確認</button>
+      <button class="cal-cancel" onclick="calCancel()">取消</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
