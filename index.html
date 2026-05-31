@@ -208,8 +208,8 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20
 .cal-confirm{background:#1a1a1a;color:#fff}
 .cal-cancel{background:#f3f3f3;color:#1a1a1a}
 @media(min-width:601px){
-  .cal-overlay{align-items:center}
-  .cal-box{border-radius:20px;max-width:480px;padding:24px}
+  .dp-overlay{align-items:center}
+  .dp-inner{border-radius:20px;max-width:480px;padding:24px}
 }
 
 /* ── Date Picker Overlay ── */
@@ -300,7 +300,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20
   </div>
 </div>
 
-<div class="dp-overlay" id="dp-overlay" onclick="onDpOverlayClick(event)"><div class="dp-inner" id="dp-inner"></div></div>
+<div class="dp-overlay" id="dp-overlay" onclick="onDpOverlayClick(event)"><div class="dp-inner" id="dp-inner" onclick="event.stopPropagation()"></div></div>
 <script>
 // ══════════════════════════════════════════════
 //  ⚙️  SUPABASE 設定（請填入你的專案資訊）
@@ -485,9 +485,9 @@ function renderDatePicker(){
   html += '<button type="button" class="picker-okay-btn" onclick="closeDatePicker()">完成</button>';
   html += '</div>';
   picker.innerHTML = html;
-  var overlay = document.getElementById('cal-overlay');
+  var overlay = document.getElementById('dp-overlay');
   if(overlay && overlay.classList.contains('open')){
-    var inner = document.getElementById('cal-overlay-inner');
+    var inner = document.getElementById('dp-inner');
     if(inner) inner.innerHTML = html;
   }
 }
@@ -1177,7 +1177,7 @@ function subscribeAll(){
 
 function calConfirm(){
   // sync picker state from overlay back to hidden picker
-  var overlayInner = document.getElementById('cal-overlay-inner');
+  var overlayInner = document.getElementById('dp-inner');
   if(overlayInner){
     // copy innerHTML back to real picker so state is preserved
     document.getElementById('trip-date-picker').innerHTML = overlayInner.innerHTML;
@@ -1191,7 +1191,7 @@ function calCancel(){
 
 
 function onDpOverlayClick(e){
-  if(e.target.id==='dp-overlay') closeDatePicker();
+  if(e.target===document.getElementById('dp-overlay')) closeDatePicker();
 }
 function bindDpInnerEvents(){
   var inner = document.getElementById('dp-inner');
@@ -1199,8 +1199,7 @@ function bindDpInnerEvents(){
   // Prev/Next month buttons
   var prev = inner.querySelector('.dp-prev');
   var next = inner.querySelector('.dp-next');
-  if(prev) prev.onclick = function(){ dpViewYear*=1; dpViewMonth*=1; dpViewMonth--; if(dpViewMonth<0){dpViewMonth=11;dpViewYear--;} renderDatePicker(); };
-  if(next) next.onclick = function(){ dpViewYear*=1; dpViewMonth*=1; dpViewMonth++; if(dpViewMonth>11){dpViewMonth=0;dpViewYear++;} renderDatePicker(); };
+  // prev/next handled by inline onclick="changePickerMonth()" - no override needed
   // Day cells
   inner.querySelectorAll('.dp-day[data-date]').forEach(function(el){
     el.onclick = function(){ selectDpDate(this.dataset.date); };
