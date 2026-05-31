@@ -195,17 +195,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 40
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .sync-status{font-size:11px;color:var(--gray-500);display:flex;align-items:center;gap:4px}
 /* ── View mode (read-only from share link) ── */
-body.view-mode .add-activity-btn,
-body.view-mode .day-controls,
-body.view-mode [data-edit-act],
-body.view-mode [data-del-act],
-body.view-mode [data-move-up],
-body.view-mode [data-move-down],
-body.view-mode .nav-btn,
-body.view-mode [data-edit],
-body.view-mode [data-del]{display:none!important}
-body.view-mode .view-mode-badge{display:flex}
-.view-mode-badge{display:none;background:#e0f2fe;color:#0369a1;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;align-items:center;gap:5px}
+
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -291,22 +281,6 @@ body.view-mode .view-mode-badge{display:flex}
 // ══════════════════════════════════════════════
 var SUPABASE_URL = 'https://hklhswlcrfdjuquqxknt.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrbGhzd2xjcmZkanVxdXF4a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxMzE0NzQsImV4cCI6MjA5NTcwNzQ3NH0.P6qjN7IUlWXFwJkjmsbQk5MOj8J9qVKJuar5FRZdmCM';
-// ══════════════════════════════════════════════
-
-var _supabase = null;
-function getSupabase(){
-  if(_supabase) return _supabase;
-  if(SUPABASE_URL==='YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY==='YOUR_SUPABASE_ANON_KEY'){
-    return null;
-  }
-  if(typeof window.supabase === 'undefined'){
-    console.warn('Supabase library 未載入，改為本機模式');
-    return null;
-  }
-  _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  return _supabase;
-}
-
 // ── State ──
 var trips = [];
 try { trips = JSON.parse(localStorage.getItem('tp_trips') || '[]'); } catch(e){ trips=[]; }
@@ -315,10 +289,10 @@ var openFormDay = null; // which day has add-form open
 var datePickerState = { start:'', end:'', currentMonth:null };
 
 // ── Sync state ──
-var currentShareId = null;     // share_id of the trip currently open
-var realtimeChannel = null;
-var isSyncing = false;
-var isViewMode = false;
+     // share_id of the trip currently open
+
+
+
 
 function setSyncStatus(status){ // 'ok' | 'err' | 'loading' | 'off'
   var dot = document.getElementById('sync-dot');
@@ -606,23 +580,10 @@ function openTrip(id){
   renderDays(trip);
   document.getElementById('page-home').classList.remove('active');
   document.getElementById('page-detail').classList.add('active');
-  // Setup share + sync
-  var sb = getSupabase();
-  if(sb){
-    updateShareBar(trip.share_id);
-    setSyncStatus('loading');
-    pushTripToCloud(id).then(function(){ subscribeRealtime(trip.share_id); });
-  } else {
-    document.getElementById('config-banner').style.display='flex';
-    setSyncStatus('off');
-  }
+  // Sync
+  if(typeof pushAll==='function') pushAll();
 }
 function goHome(){
-  var sb = getSupabase();
-  if(realtimeChannel && sb){ sb.removeChannel(realtimeChannel); realtimeChannel=null; }
-  currentShareId = null;
-  isViewMode = false;
-  document.body.classList.remove('view-mode');
   document.getElementById('page-detail').classList.remove('active');
   document.getElementById('page-home').classList.add('active');
   renderHome();
