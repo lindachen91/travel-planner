@@ -64,6 +64,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20
 .add-activity-btn:hover{opacity:.8}
 .day-controls{display:flex;align-items:center;gap:8px;margin-left:8px}
 .day-controls .icon-btn{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center}
+.day-controls .add-activity-btn{padding:0;width:36px;height:36px;border-radius:8px;font-size:16px;display:inline-flex;align-items:center;justify-content:center}
 .day-controls .day-move-btn{background:var(--accent);border:none;padding:6px 10px;font-size:16px;color:var(--white);border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
 .day-controls .day-move-btn:hover{opacity:0.95;transform:translateY(-1px)}
 .day-controls .day-move-btn:active{transform:translateY(0)}
@@ -87,7 +88,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20
 
 /* ── Activity Item ── */
 .activity-list{display:flex;flex-direction:column;gap:0}
-.activity-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--gray-100);position:relative}
+.activity-item{display:flex;align-items:flex-start;gap:8px;padding:12px 0;border-bottom:1px solid var(--gray-100);position:relative}
 .activity-item:last-child{border-bottom:none}
 .activity-item.dragging{opacity:.4}
 .activity-item.drag-over{box-shadow:inset 0 2px 0 var(--accent)}
@@ -112,7 +113,7 @@ nav{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 20
 .day-header.dragging{opacity:0.8;transform:scale(.995);transition:transform .12s,opacity .12s}
 .day-section.dragging{opacity:0.98;transform:scale(.998);transition:transform .12s,opacity .12s}
 .day-section.drag-over{box-shadow:0 10px 30px rgba(0,0,0,0.12);border-color:var(--accent)}
-.activity-time{font-size:12px;font-weight:600;color:var(--black);font-variant-numeric:tabular-nums;min-width:80px;padding-top:2px}
+.activity-time{font-size:14px;font-weight:600;color:var(--black);font-variant-numeric:tabular-nums;min-width:56px;padding-top:2px}
 .activity-info{flex:1;min-width:0;overflow:hidden}
 .activity-name{font-weight:600;font-size:14px;margin-bottom:2px}
 .activity-place{font-size:12px;color:var(--gray-500);display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -681,10 +682,10 @@ function renderDays(trip){
           '</div>' +
         '</div>';
       var addBtn = document.createElement('button');
-      addBtn.className = 'add-activity-btn';
-      addBtn.innerHTML = '＋ 新增活動';
-      addBtn.addEventListener('click', function(){ toggleAddForm(dayIdx, trip); });
-      hdr.appendChild(addBtn);
+      addBtn.className = 'icon-btn add-activity-btn';
+      addBtn.title = '新增活動';
+      addBtn.innerHTML = '＋';
+      addBtn.addEventListener('click', function(e){ e.stopPropagation(); toggleAddForm(dayIdx, trip); });
       // day move controls (swap whole day up/down)
       var dayControls = document.createElement('div');
       dayControls.className = 'day-controls';
@@ -698,6 +699,7 @@ function renderDays(trip){
       dayDown.title = '下移整日';
       dayDown.innerHTML = '⭣';
       dayDown.addEventListener('click', function(e){ e.stopPropagation(); if(dayIdx<days-1) swapDays(dayIdx, dayIdx+1); });
+      dayControls.appendChild(addBtn);
       dayControls.appendChild(dayUp);
       dayControls.appendChild(dayDown);
       hdr.appendChild(dayControls);
